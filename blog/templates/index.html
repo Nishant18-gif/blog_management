@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Blog</title>
+    <style>
+        body { font-family: Arial; background: #f4f4f4; margin: 0; }
+        h1 { text-align: center; background: #333; color: white; padding: 20px; }
+        .user-info { text-align: center; margin: 15px; }
+        table { width: 80%; margin: 20px auto; border-collapse: collapse; background: white; }
+        th, td { padding: 10px; border: 1px solid #ccc; }
+        th { background: #000; color: white; }
+        .edit-btn, .add-btn, .delete-btn { padding: 6px 10px; background: #000; color: white; border: none; cursor: pointer; margin-right: 5px; }
+        .edit-input { width: 80%; padding: 5px; }
+        .add-container { width: 80%; margin: auto; text-align: right; }
+        .auth-container { display: flex; justify-content: center; align-items: center; height: 60vh; }
+        .auth-box { text-align: center; padding: 25px; background: white; width: 320px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .auth-box input { width: 90%; padding: 10px; margin: 8px 0; }
+        .auth-box button { padding: 10px 18px; background: #333; color: white; border: none; cursor: pointer; margin-top: 5px; }
+        .error { color: red; font-size: 14px; }
+        .toggle-link { cursor: pointer; color: blue; text-decoration: underline; }
+    </style>
+
+    <script>
+        const csrftoken = (() => {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                let cookies = document.cookie.split(';');
+                for (let i=0;i<cookies.length;i++){
+                    let cookie = cookies[i].trim();
+                    if(cookie.substring(0,'csrftoken'.length+1)==='csrftoken='){
+                        cookieValue = decodeURIComponent(cookie.substring('csrftoken'.length+1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        })();
+
+        function showSignup() { document.getElementById('login-form').style.display='none'; document.getElementById('signup-form').style.display='block'; }
+        function showLogin() { document.getElementById('signup-form').style.display='none'; document.getElementById('login-form').style.display='block'; }
+
+        // BLOG CRUD
+        function addBlog() {
+            let title=prompt("Enter blog title"); if(!title) return;
+            let content=prompt("Enter blog content"); if(!content) return;
+            fetch("/api/blogs/", {method:"POST", credentials:"include", headers:{"Content-Type":"application/json","X-CSRFToken":csrftoken}, body:JSON.stringify({title,content})})
+            .then(()=>location.reload());
+        }
+
+        function deleteBlog(blogId) {
+            if(!confirm("Delete this blog?")) return;
+            fetch(`/api/blogs/${blogId}/`, {method:"DELETE", credentials:"include", headers:{"X-CSRFToken":csrftoken}})
+            .then(res => { 
+                if(res.status===204) location.reload(); 
+                else if(res.status===404) { alert("Blog not found or already deleted"); location.reload(); }
+                else alert("Failed to delete blog"); 
+            });
+        }
+
+        function editBlog(blogId) {
+            let td = document.getElementById("blog-content-" + blogId);
+            let title = td.dataset.title;
+            let content = td.dataset.content;
+            td.innerHTML = `
+                <input class="edit-input" id="blog-title-${blogId}" value="${title}"><br>
+                <textarea class="edit-input" id="blog-content-${blogId}-textarea" rows="3">${content}</textarea><br>
+                <button class="edit-btn" onclick="updateBlog(${blogId})">Update</button>
+                <button class="delete-btn" onclick="cancelEditBlog(${blogId}, '${title.replace(/'/g,"\\'")}', '${content.replace(/'/g,"\\'")}')">Cancel</button>
+            `;
+        }
+
+        function updateBlog(blogId) {
+            let newTitle = document.getElementById("blog-title-" + blogId).value;
+            let newContent = document.getElementById("blog-content-" + blogId + "-textarea").value;
+            if(!newTitle || !newContent){ alert("Both title and content are required"); return; }
+            fetch(`/api/blogs/${blogId}/`, {method:"PUT", credentials:"include", headers: {"Content-Type":"application/json","X-CSRFToken":csrftoken}, body: JSON.stringify({title:newTitle, content:newContent})})
+            .then(res => res.json())
+            .then(data => {
+                let td = document.getElementById("blog-content-" + blogId);
+                td.dataset.title = data.title;
+                td.dataset.content = data.content;
+                td.innerHTML = `<b>${data.title}</b><br>${data.content}`;
+            });
+        }
+
+        function cancelEditBlog(blogId, title, content){
+            let td = document.getElementById("blog-content-" + blogId);
+            td.innerHTML = `<b>${title}</b><br>${content}`;
+        }
+
+        // COMMENTS CRUD
+        function addComment(blogId) {
+            let text=prompt("Enter comment"); if(!text) return;
+            fetch(`/api/blogs/${blogId}/comments/`, {method:"POST", credentials:"include", headers:{"Content-Type":"application/json","X-CSRFToken":csrftoken}, body:JSON.stringify({text})})
+            .then(()=>location.reload());
+        }
+
+        function editComment(id){
+            let td=document.getElementById("comment-" + id);
+            let text=td.dataset.text;
+            td.innerHTML=`<input class="edit-input" id="input-${id}" value="${text}"><button class="edit-btn" onclick="updateComment(${id})">Update</button><button class="delete-btn" onclick="cancelEditComment(${id}, '${text.replace(/'/g,"\\'")}')">Cancel</button>`;
+        }
+
+        function updateComment(id){
+            let text=document.getElementById("input-"+id).value;
+            fetch(`/api/comments/${id}/`, {method:"PUT", credentials:"include", headers:{"Content-Type":"application/json","X-CSRFToken":csrftoken}, body:JSON.stringify({text})})
+            .then(res => res.json())
+            .then(data => {
+                let td=document.getElementById("comment-"+id);
+                td.dataset.text=data.text;
+                td.innerHTML=`${data.text} <button class="edit-btn" onclick="editComment(${id})">Edit</button><button class="delete-btn" onclick="deleteComment(${id})">Delete</button>`;
+            });
+        }
+
+        function cancelEditComment(id, text){
+            let td=document.getElementById("comment-" + id);
+            td.innerHTML=`${text} <button class="edit-btn" onclick="editComment(${id})">Edit</button><button class="delete-btn" onclick="deleteComment(${id})">Delete</button>`;
+        }
+
+        function deleteComment(id){
+            if(!confirm("Delete this comment?")) return;
+            fetch(`/api/comments/${id}/delete/`, {method:"DELETE", credentials:"include", headers:{"X-CSRFToken":csrftoken}})
+            .then(res => { 
+                if(res.status===204){ 
+                    let td=document.getElementById("comment-"+id); 
+                    if(td && td.parentElement) td.parentElement.remove(); 
+                } else alert("Failed to delete comment"); 
+            });
+        }
+    </script>
+</head>
+<body>
+
+<h1>My Blog Website</h1>
+
+{% if user.is_authenticated %}
+<div class="user-info">
+    Welcome <b>{{ user.username }}</b> | <a href="{% url 'logout_frontend' %}">Logout</a>
+</div>
+
+<div class="add-container">
+    <button class="add-btn" onclick="addBlog()">Add Blog</button>
+</div>
+
+<table>
+    <tr><th>Author</th><th>Content</th><th>Actions</th></tr>
+    {% for blog in blogs %}
+    <tr id="blog-{{ blog.id }}">
+        <td>{{ blog.author.username }}</td>
+        <td id="blog-content-{{ blog.id }}" data-title="{{ blog.title }}" data-content="{{ blog.content }}">
+            <b>{{ blog.title }}</b><br>{{ blog.content }}
+        </td>
+        <td>
+            {% if user == blog.author %}
+            <button class="edit-btn" onclick="editBlog({{ blog.id }})">Edit Blog</button>
+            <button class="delete-btn" onclick="deleteBlog({{ blog.id }})">Delete</button>
+            <button class="add-btn" onclick="addComment({{ blog.id }})">Add Comment</button>
+            {% endif %}
+        </td>
+    </tr>
+
+    {% for comment in blog.comments.all %}
+        {% if comment %}
+        <tr id="comment-{{ comment.id }}">
+            <td>{{ comment.author.username }}</td>
+            <td data-text="{{ comment.text }}">{{ comment.text }}</td>
+            <td>
+                {% if user == comment.author %}
+                <button class="edit-btn" onclick="editComment({{ comment.id }})">Edit</button>
+                <button class="delete-btn" onclick="deleteComment({{ comment.id }})">Delete</button>
+                {% endif %}
+            </td>
+        </tr>
+        {% endif %}
+    {% endfor %}
+    {% endfor %}
+</table>
+
+{% else %}
+<div class="auth-container">
+    <div class="auth-box">
+        <div id="login-form">
+            {% if error %}<p class="error">{{ error }}</p>{% endif %}
+            <form method="POST" action="{% url 'login_frontend' %}">
+                {% csrf_token %}
+                <input type="text" name="username" placeholder="Username" required><br><br>
+                <input type="password" name="password" placeholder="Password" required><br><br>
+                <button type="submit">Login</button>
+            </form>
+            <p class="toggle-link" onclick="showSignup()">Don't have an account? Sign Up</p>
+        </div>
+        <div id="signup-form" style="display:none;">
+            {% if signup_error %}<p class="error">{{ signup_error }}</p>{% endif %}
+            <form method="POST" action="{% url 'signup_frontend' %}">
+                {% csrf_token %}
+                <input type="text" name="username" placeholder="Choose Username" required><br><br>
+                <input type="password" name="password" placeholder="Choose Password" required><br><br>
+                <button type="submit">Sign Up</button>
+            </form>
+            <p class="toggle-link" onclick="showLogin()">Already have an account? Login</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+</body>
+</html>
