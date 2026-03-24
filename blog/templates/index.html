@@ -6,32 +6,70 @@
     <style>
         body { font-family: Arial; background: #f4f4f4; margin: 0; }
         h1 { text-align: center; background: #333; color: white; padding: 20px; }
+
         .user-info { text-align: center; margin: 15px; }
+
         table { width: 80%; margin: 20px auto; border-collapse: collapse; background: white; }
         th, td { padding: 10px; border: 1px solid #ccc; }
         th { background: #000; color: white; }
-        .edit-btn, .add-btn, .delete-btn { padding: 6px 10px; background: #000; color: white; border: none; cursor: pointer; margin-right: 5px; }
+
+        .edit-btn, .add-btn, .delete-btn {
+            padding: 6px 10px; background: #000; color: white;
+            border: none; cursor: pointer; margin-right: 5px;
+        }
+
         .add-container { width: 80%; margin: auto; text-align: right; }
-        .auth-container { display: flex; justify-content: center; align-items: center; height: 60vh; }
-        .auth-box { text-align: center; padding: 25px; background: white; width: 320px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .auth-box input { width: 90%; padding: 10px; margin: 8px 0; }
-        .auth-box button { padding: 10px 18px; background: #333; color: white; border: none; cursor: pointer; margin-top: 5px; }
-        .error { color: red; font-size: 14px; }
-        .toggle-link { cursor: pointer; color: blue; text-decoration: underline; }
+
+        .auth-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 70vh;
+        }
+
+        .auth-box {
+            text-align: center;
+            padding: 25px;
+            background: white;
+            width: 320px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .auth-box input {
+            width: 90%;
+            padding: 10px;
+            margin: 8px 0;
+        }
+
+        .auth-box button {
+            padding: 10px 18px;
+            background: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .toggle-link {
+            color: blue;
+            cursor: pointer;
+            text-decoration: underline;
+        }
 
         .search-box {
-             display: flex;
-             justify-content: flex-end;
-             padding: 10px 20px;
-             background: #333;
+            display: flex;
+            justify-content: flex-end;
+            padding: 10px 20px;
+            background: #333;
         }
+
         .search-box input { padding: 6px; }
+
         .search-box button {
             padding: 6px 10px;
             background: black;
             color: white;
             border: none;
-            cursor: pointer;
         }
 
         .like-btn {
@@ -42,9 +80,21 @@
             border-radius: 5px;
             font-weight: bold;
         }
+
+        .comment-row td { padding-left: 40px; font-style: italic; }
     </style>
 
     <script>
+        function showSignup() {
+            document.getElementById("loginBox").style.display = "none";
+            document.getElementById("signupBox").style.display = "block";
+        }
+
+        function showLogin() {
+            document.getElementById("signupBox").style.display = "none";
+            document.getElementById("loginBox").style.display = "block";
+        }
+
         function searchContent() {
             let query = document.getElementById("searchInput").value.toLowerCase();
 
@@ -57,7 +107,6 @@
             });
         }
 
-        // ✅ LIKE
         function toggleLike(blogId) {
             fetch(`/api/blogs/${blogId}/like/`, {
                 method: "POST",
@@ -67,18 +116,14 @@
             .then(res => res.json())
             .then(data => {
                 let btn = document.getElementById("like-btn-" + blogId);
-
-                if (data.liked) {
-                    btn.innerHTML = `👎 Unlike (${data.likes_count})`;
-                } else {
-                    btn.innerHTML = `👍 Like (${data.likes_count})`;
-                }
+                btn.innerHTML = data.liked
+                    ? `👎 Unlike (${data.likes_count})`
+                    : `👍 Like (${data.likes_count})`;
             });
         }
 
         function deleteBlog(blogId) {
             if (!confirm("Delete this blog?")) return;
-
             fetch(`/api/blogs/${blogId}/`, {
                 method: "DELETE",
                 headers: { "X-CSRFToken": getCSRFToken() },
@@ -86,12 +131,20 @@
             }).then(() => location.reload());
         }
 
-        // ✅ EDIT BLOG
+        // ✅ INLINE EDIT
         function editBlog(blogId) {
-            let title = prompt("New title:");
-            let content = prompt("New content:");
+            document.getElementById(`title-text-${blogId}`).style.display = "none";
+            document.getElementById(`content-text-${blogId}`).style.display = "none";
 
-            if (!title || !content) return;
+            document.getElementById(`title-input-${blogId}`).style.display = "inline";
+            document.getElementById(`content-input-${blogId}`).style.display = "block";
+
+            document.getElementById(`save-blog-${blogId}`).style.display = "inline";
+        }
+
+        function saveBlog(blogId) {
+            let title = document.getElementById(`title-input-${blogId}`).value;
+            let content = document.getElementById(`content-input-${blogId}`).value;
 
             fetch(`/api/blogs/${blogId}/`, {
                 method: "PUT",
@@ -101,37 +154,6 @@
                 },
                 credentials: "include",
                 body: JSON.stringify({ title, content })
-            }).then(() => location.reload());
-        }
-
-        // =========================
-        // ✅ COMMENT EDIT (INLINE)
-        // =========================
-
-        function editComment(commentId) {
-            let textSpan = document.getElementById(`comment-text-${commentId}`);
-            let inputBox = document.getElementById(`edit-input-${commentId}`);
-            let saveBtn = document.getElementById(`save-btn-${commentId}`);
-
-            textSpan.style.display = "none";
-            inputBox.style.display = "inline";
-            saveBtn.style.display = "inline";
-
-            inputBox.focus();
-        }
-
-        function saveComment(commentId) {
-            let inputBox = document.getElementById(`edit-input-${commentId}`);
-            let newText = inputBox.value;
-
-            fetch(`/api/comments/${commentId}/`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": getCSRFToken()
-                },
-                credentials: "include",
-                body: JSON.stringify({ text: newText })
             })
             .then(res => {
                 if (!res.ok) throw new Error("Update failed");
@@ -143,10 +165,13 @@
             });
         }
 
-        // =========================
-
         function addComment(blogId) {
             let text = prompt("Enter comment:");
+
+            if (!text || text.trim() === "") {
+                alert("Comment cannot be empty!");
+                return;
+            }
 
             fetch(`/api/blogs/${blogId}/comments/`, {
                 method: "POST",
@@ -155,28 +180,73 @@
                     "X-CSRFToken": getCSRFToken()
                 },
                 credentials: "include",
-                body: JSON.stringify({ text })
-            }).then(() => location.reload());
+                body: JSON.stringify({ text: text })
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("Failed to add comment");
+                return res.json();
+            })
+            .then(data => location.reload())
+            .catch(err => {
+                console.log(err);
+                alert("Comment add nahi hua");
+            });
         }
 
         function deleteComment(commentId) {
-           if (!confirm("Delete this comment?")) return;
-
+            if (!confirm("Delete this comment?")) return;
             fetch(`/api/comments/${commentId}/delete/`, {
                 method: "DELETE",
                 headers: { "X-CSRFToken": getCSRFToken() },
                 credentials: "include"
-            })
-            .then(res => {
-               if (!res.ok) throw new Error("Delete failed");
-               location.reload();
-            })
-            .catch(err => console.log(err));
+            }).then(() => location.reload());
         }
+        // ✅ ADD THIS INLINE COMMENT EDIT LOGIC HERE
+function editComment(commentId) {
+    document.getElementById(`comment-text-${commentId}`).style.display = "none";
+    document.getElementById(`edit-comment-${commentId}`).style.display = "inline";
+    document.getElementById(`save-comment-${commentId}`).style.display = "inline";
+}
+
+function saveComment(commentId) {
+    let newText = document.getElementById(`edit-comment-${commentId}`).value;
+
+    if (!newText || newText.trim() === "") {
+        alert("Comment cannot be empty!");
+        return;
+    }
+
+    fetch(`/api/comments/${commentId}/`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCSRFToken()
+        },
+        credentials: "include",
+        body: JSON.stringify({ text: newText })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Update failed");
+        location.reload();
+    })
+    .catch(err => {
+        console.log(err);
+        alert("Edit failed");
+    });
+}
+
+function getCSRFToken() {
+    let name = "csrftoken=";
+    return document.cookie.split(';')
+        .find(c => c.trim().startsWith(name))
+        ?.split('=')[1];
+}
 
         function getCSRFToken() {
             let name = "csrftoken=";
-            return document.cookie.split(';').find(c => c.trim().startsWith(name))?.split('=')[1];
+            return document.cookie.split(';')
+                .find(c => c.trim().startsWith(name))
+                ?.split('=')[1];
         }
     </script>
 </head>
@@ -186,13 +256,15 @@
 <h1>My Blog Website</h1>
 
 {% if user.is_authenticated %}
+
 <div class="search-box">
     <input type="text" id="searchInput" placeholder="Search...">
     <button onclick="searchContent()">Search</button>
 </div>
 
 <div class="user-info">
-    Welcome <b>{{ user.username }}</b> | <a href="{% url 'logout_frontend' %}">Logout</a>
+    Welcome <b>{{ user.username }}</b> |
+    <a href="{% url 'logout_frontend' %}">Logout</a>
 </div>
 
 <div class="add-container">
@@ -200,65 +272,97 @@
 </div>
 
 <table>
-    <tr><th>Author</th><th>Content</th><th>Actions</th></tr>
+<tr><th>Author</th><th>Content</th><th>Actions</th></tr>
 
-    {% for blog in blogs %}
-    <tr id="blog-{{ blog.id }}">
-        <td>{{ blog.author.username }}</td>
+{% for blog in blogs %}
+<tr id="blog-{{ blog.id }}">
+<td>{{ blog.author.username }}</td>
 
-        <td>
-            <b>{{ blog.title }}</b><br>{{ blog.content }}
+<td>
+<b>
+<span id="title-text-{{ blog.id }}">{{ blog.title }}</span>
+<input type="text" id="title-input-{{ blog.id }}" value="{{ blog.title }}" style="display:none;">
+</b>
+<br>
 
-            <br><br>
+<span id="content-text-{{ blog.id }}">{{ blog.content }}</span>
+<textarea id="content-input-{{ blog.id }}" style="display:none;">{{ blog.content }}</textarea>
 
-            <button id="like-btn-{{ blog.id }}" class="like-btn" onclick="toggleLike({{ blog.id }})">
-                {% if blog.is_liked %}
-                    👎 Unlike ({{ blog.likes_count }})
-                {% else %}
-                    👍 Like ({{ blog.likes_count }})
-                {% endif %}
-            </button>
+<br><br>
 
-        </td>
+<button id="like-btn-{{ blog.id }}" class="like-btn"
+onclick="toggleLike({{ blog.id }})">
+👍 Like ({{ blog.likes_count }})
+</button>
+</td>
 
-        <td>
-            {% if user == blog.author %}
-            <button class="edit-btn" onclick="editBlog({{ blog.id }})">Edit Blog</button>
-            <button class="delete-btn" onclick="deleteBlog({{ blog.id }})">Delete</button>
-            <button class="add-btn" onclick="addComment({{ blog.id }})">Add Comment</button>
-            {% endif %}
-        </td>
-    </tr>
+<td>
+{% if user == blog.author %}
+<button onclick="editBlog({{ blog.id }})">Edit Blog</button>
+<button id="save-blog-{{ blog.id }}" style="display:none;" onclick="saveBlog({{ blog.id }})">Save</button>
+<button onclick="deleteBlog({{ blog.id }})">Delete</button>
+<button onclick="addComment({{ blog.id }})">Comment</button>
+{% endif %}
+</td>
+</tr>
 
-    <!-- ================= COMMENT SECTION ================= -->
-    {% for comment in blog.comments.all %}
-    <tr id="comment-{{ comment.id }}">
-        <td>{{ comment.author.username }}</td>
+<!-- ✅ COMMENT LOOP -->
+{% for comment in blog.comments.all %}
+<tr id="comment-{{ comment.id }}" class="comment-row">
+    <td>{{ comment.author.username }}</td>
+    <td>
+        <!-- COMMENT TEXT DISPLAY -->
+        <span id="comment-text-{{ comment.id }}">{{ comment.text }}</span>
 
-        <td>
-            <!-- comment text -->
-            <span id="comment-text-{{ comment.id }}">{{ comment.text }}</span>
+        <!-- INLINE EDIT INPUT -->
+        <input type="text" id="edit-comment-{{ comment.id }}" value="{{ comment.text }}" style="display:none;">
+    </td>
+    <td>
+        {% if user == comment.author %}
+        <button onclick="editComment({{ comment.id }})">Edit</button>
+        <button id="save-comment-{{ comment.id }}" style="display:none;" onclick="saveComment({{ comment.id }})">Save</button>
+        <button onclick="deleteComment({{ comment.id }})">Delete</button>
+        {% endif %}
+    </td>
+</tr>
+{% endfor %}
 
-            <!-- hidden input for editing -->
-            <input type="text"
-                   id="edit-input-{{ comment.id }}"
-                   value="{{ comment.text }}"
-                   style="display:none;">
-        </td>
-
-        <td>
-            {% if user == comment.author %}
-            <button class="edit-btn" onclick="editComment({{ comment.id }})">Edit</button>
-            <button class="edit-btn" id="save-btn-{{ comment.id }}" style="display:none;" onclick="saveComment({{ comment.id }})">Save</button>
-            <button class="delete-btn" onclick="deleteComment({{ comment.id }})">Delete</button>
-            {% endif %}
-        </td>
-    </tr>
-    {% endfor %}
-    <!-- =================================================== -->
-
-    {% endfor %}
+{% endfor %}
 </table>
+
+{% else %}
+
+<div class="auth-container">
+
+<div class="auth-box" id="loginBox">
+    <h2>Login</h2>
+    <form method="POST" action="{% url 'login_frontend' %}">
+        {% csrf_token %}
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
+
+    <p>Don't have an account?
+        <span class="toggle-link" onclick="showSignup()">Sign Up</span>
+    </p>
+</div>
+
+<div class="auth-box" id="signupBox" style="display:none;">
+    <h2>Sign Up</h2>
+    <form method="POST" action="{% url 'signup_frontend' %}">
+        {% csrf_token %}
+        <input type="text" name="username" placeholder="Create Username" required>
+        <input type="password" name="password" placeholder="Create Password" required>
+        <button type="submit">Sign Up</button>
+    </form>
+
+    <p>Already have an account?
+        <span class="toggle-link" onclick="showLogin()">Login</span>
+    </p>
+</div>
+
+</div>
 
 {% endif %}
 
