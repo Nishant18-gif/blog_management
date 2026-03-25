@@ -9,7 +9,7 @@
 
         .user-info { text-align: center; margin: 15px; }
 
-        table { width: 80%; margin: 20px auto; border-collapse: collapse; background: white; }
+        table { width: 80%; margin: 20px auto; border-collapse: collapse; background: white;  }
         th, td { padding: 10px; border: 1px solid #ccc; }
         th { background: #000; color: white; }
 
@@ -131,7 +131,7 @@
             }).then(() => location.reload());
         }
 
-        // ✅ INLINE EDIT
+        //  INLINE EDIT
         function editBlog(blogId) {
             document.getElementById(`title-text-${blogId}`).style.display = "none";
             document.getElementById(`content-text-${blogId}`).style.display = "none";
@@ -201,7 +201,7 @@
                 credentials: "include"
             }).then(() => location.reload());
         }
-        // ✅ ADD THIS INLINE COMMENT EDIT LOGIC HERE
+        //  INLINE COMMENT EDIT LOGIC 
 function editComment(commentId) {
     document.getElementById(`comment-text-${commentId}`).style.display = "none";
     document.getElementById(`edit-comment-${commentId}`).style.display = "inline";
@@ -248,6 +248,37 @@ function getCSRFToken() {
                 .find(c => c.trim().startsWith(name))
                 ?.split('=')[1];
         }
+        function addBlog() {
+    let title = prompt("Enter blog title:");
+    let content = prompt("Enter blog content:");
+
+    if (!title || !content) {
+        alert("Title aur content required hai!");
+        return;
+    }
+
+    fetch(`/api/blogs/`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCSRFToken()
+        },
+        credentials: "include",
+        body: JSON.stringify({ title, content })
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Blog add failed");
+        return res.json();
+    })
+    .then(data => {
+        alert("Blog added successfully!");
+        location.reload();
+    })
+    .catch(err => {
+        console.log(err);
+        alert("Blog add nahi hua");
+    });
+}
     </script>
 </head>
 
@@ -276,7 +307,9 @@ function getCSRFToken() {
 
 {% for blog in blogs %}
 <tr id="blog-{{ blog.id }}">
-<td>{{ blog.author.username }}</td>
+<td >
+    {{ blog.author.username }}
+</td>
 
 <td>
 <b>
@@ -306,7 +339,7 @@ onclick="toggleLike({{ blog.id }})">
 </td>
 </tr>
 
-<!-- ✅ COMMENT LOOP -->
+<!--  COMMENT LOOP -->
 {% for comment in blog.comments.all %}
 <tr id="comment-{{ comment.id }}" class="comment-row">
     <td>{{ comment.author.username }}</td>
