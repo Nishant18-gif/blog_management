@@ -7,6 +7,7 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
+from rest_framework.decorators import authentication_classes
 
 from rest_framework.generics import ListCreateAPIView
 
@@ -76,6 +77,7 @@ def signup_frontend(request):
 # -----------------------------
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@authentication_classes([])
 def signup(request):
     username = request.data.get('username')
     password = request.data.get('password')
@@ -95,6 +97,8 @@ def signup(request):
 # -----------------------------
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@authentication_classes([])   
+
 def login(request):
     username = request.data.get("username")
     password = request.data.get("password")

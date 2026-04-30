@@ -124,7 +124,7 @@
 
         function deleteBlog(blogId) {
             if (!confirm("Delete this blog?")) return;
-            fetch(`/api/blogs/${blogId}/`, {
+            fetch(`/blogs/${blogId}/`, {
                 method: "DELETE",
                 headers: { "X-CSRFToken": getCSRFToken() },
                 credentials: "include"
@@ -146,7 +146,7 @@
             let title = document.getElementById(`title-input-${blogId}`).value;
             let content = document.getElementById(`content-input-${blogId}`).value;
 
-            fetch(`/api/blogs/${blogId}/`, {
+            fetch(`/blogs/${blogId}/`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -173,7 +173,7 @@
                 return;
             }
 
-            fetch(`/api/blogs/${blogId}/comments/`, {
+            fetch(`/blogs/${blogId}/comments/`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -195,7 +195,7 @@
 
         function deleteComment(commentId) {
             if (!confirm("Delete this comment?")) return;
-            fetch(`/api/comments/${commentId}/delete/`, {
+            fetch(`/comments/${commentId}/delete/`, {
                 method: "DELETE",
                 headers: { "X-CSRFToken": getCSRFToken() },
                 credentials: "include"
@@ -216,7 +216,7 @@ function saveComment(commentId) {
         return;
     }
 
-    fetch(`/api/comments/${commentId}/`, {
+    fetch(`/comments/${commentId}/`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
@@ -257,7 +257,7 @@ function getCSRFToken() {
         return;
     }
 
-    fetch(`/api/blogs/`, {
+    fetch(`/blogs/`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
