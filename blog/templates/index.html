@@ -257,28 +257,34 @@ function getCSRFToken() {
         return;
     }
 
-    fetch(`/api/blogs/`, {
-        method: "POST",
-        headers: {
-              "Content-Type": "application/json",
-             
-             "Authorization": "Token " + localStorage.getItem("token")
-        },
-        
-        body: JSON.stringify({ title, content })
+fetch(`/api/blogs/`, {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Token " + localStorage.getItem("token")
+    },
+    body: JSON.stringify({
+        title: title,
+        content: content
     })
-    .then(res => {
-        if (!res.ok) throw new Error("Blog add failed");
-        return res.json();
-    })
-    .then(data => {
-        alert("Blog added successfully!");
-        location.reload();
-    })
-    .catch(err => {
-        console.log(err);
-        alert("Blog add nahi hua");
-    });
+})
+.then(res => {
+    if (res.status === 401) {
+        throw new Error("Unauthorized - Login again");
+    }
+    if (!res.ok) {
+        throw new Error("Blog add failed");
+    }
+    return res.json();
+})
+.then(data => {
+    alert("Blog added successfully!");
+    location.reload();
+})
+.catch(err => {
+    console.log(err.message);
+    alert(err.message);
+});
 }
     </script>
 </head>
