@@ -261,9 +261,10 @@ function getCSRFToken() {
         method: "POST",
         headers: {
               "Content-Type": "application/json",
-             "X-CSRFToken": getCSRFToken()
+             
+             "Authorization": "Token " + localStorage.getItem("token")
         },
-        credentials: "include",
+        
         body: JSON.stringify({ title, content })
     })
     .then(res => {
