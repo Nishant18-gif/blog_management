@@ -257,15 +257,15 @@ function getCSRFToken() {
         return;
     }
 
-    fetch(`/blogs/`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": getCSRFToken()
-        },
-        credentials: "include",
-        body: JSON.stringify({ title, content })
-    })
+fetch(`/api/blogs/`, {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCSRFToken()
+    },
+    credentials: "include",
+    body: JSON.stringify({ title, content })
+})
     .then(res => {
         if (!res.ok) throw new Error("Blog add failed");
         return res.json();
